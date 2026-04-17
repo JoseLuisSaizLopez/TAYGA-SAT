@@ -15,20 +15,20 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download CelesTrak satellite data
         run: |
-          mkdir -p data
+          mkdir -p public/data
           curl -L --retry 3 --retry-delay 10 \
-            -o data/satellites.json \
+            -o public/data/satellites.json \
             "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
-          
+
           # Validate the JSON file
           python3 -c "
           import json, sys
           try:
-              with open('data/satellites.json') as f:
+              with open('public/data/satellites.json') as f:
                   data = json.load(f)
               if not isinstance(data, list) or len(data) < 100:
                   print(f'Warning: Only {len(data)} satellites found')
@@ -43,7 +43,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/satellites.json
+          git add public/data/satellites.json
           
           # Only commit if there are changes
           if git diff --staged --quiet; then
