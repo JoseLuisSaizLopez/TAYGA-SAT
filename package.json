@@ -1,0 +1,22 @@
+{
+  "name": "tayga-sat",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cesium": "^1.140.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "satellite.js": "^5.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "vite": "^8.0.4",
+    "vite-plugin-cesium": "^1.2.23"
+  }
+}
