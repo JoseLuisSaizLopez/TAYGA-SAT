@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     cesium()
   ],
-  base: '/TAYGA-SAT/',
+  base: './',
   server: {
     port: 3000,
     open: true

@@ -53,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:3000/TAYGA-SAT/`.
+Opens at `http://localhost:3000/`.
 
 ### Production build
 
@@ -126,13 +126,7 @@ Selected satellites are re-propagated every frame for sub-second smoothness.
 
 ## Deployment
 
-The Vite `base` is set to `/TAYGA-SAT/`. To deploy elsewhere, edit `vite.config.js`:
-
-```js
-base: '/your-path/',
-```
-
-For root-level hosting (e.g. a custom domain), use `base: '/'`.
+The Vite `base` is set to `./` (relative paths) so the build is portable across any hosting path — root domain, subpath, or GitHub Pages project site — without reconfiguration.
 
 ### GitHub Pages
 
