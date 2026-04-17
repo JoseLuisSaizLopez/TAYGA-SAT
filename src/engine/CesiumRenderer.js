@@ -124,8 +124,7 @@ export class CesiumRenderer {
     // Minimum height while track mode is active — keeps the satellite
     // framed with its label visible, not glued to the point primitive.
     this._trackMinZoom = 2_500_000;
-    this._wheelHandler = (event) => {
-      event.preventDefault();
+    this._applyZoomDelta = (delta) => {
       const camera = scene.camera;
       // Abort any in-flight flyTo — otherwise the tween keeps pulling the
       // camera back to its destination and the user's zoom drifts away.
@@ -135,12 +134,11 @@ export class CesiumRenderer {
       }
       const radius = scene.globe.ellipsoid.maximumRadius;
       const distFromCenter = Cesium.Cartesian3.magnitude(camera.positionWC);
-      // When tracking, use the stored target height so wheel events don't
+      // When tracking, use the stored target height so zoom events don't
       // fight the per-frame setView. Otherwise fall back to live height.
       const referenceHeight = (this.trackingId != null && this._trackHeight != null)
         ? this._trackHeight
         : distFromCenter - radius;
-      const delta = event.deltaY;
       const factor = Math.min(Math.max(Math.abs(delta) / 100, 0.05), 1.5);
       const step = referenceHeight * 0.18 * factor;
       let newHeight = delta > 0 ? referenceHeight + step : referenceHeight - step;
@@ -148,7 +146,6 @@ export class CesiumRenderer {
       newHeight = Math.max(min, Math.min(this._maxZoom, newHeight));
 
       if (this.trackingId != null) {
-        // Store the user's desired height; updateTracking will apply it.
         this._trackHeight = newHeight;
       } else {
         const liveHeight = distFromCenter - radius;
@@ -157,7 +154,43 @@ export class CesiumRenderer {
         else if (amount < 0) camera.zoomOut(-amount);
       }
     };
+
+    this._wheelHandler = (event) => {
+      event.preventDefault();
+      this._applyZoomDelta(event.deltaY);
+    };
     container.addEventListener('wheel', this._wheelHandler, { passive: false });
+
+    // Touch pinch → zoom. Two fingers spreading = zoom in, pinching = zoom out.
+    let lastPinchDist = null;
+    const pinchDist = (touches) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    };
+    this._touchStartHandler = (e) => {
+      if (e.touches.length === 2) {
+        lastPinchDist = pinchDist(e.touches);
+        e.preventDefault();
+      }
+    };
+    this._touchMoveHandler = (e) => {
+      if (e.touches.length === 2 && lastPinchDist != null) {
+        const dist = pinchDist(e.touches);
+        // Scale pinch delta to roughly match wheel deltaY magnitudes.
+        const delta = (lastPinchDist - dist) * 2;
+        this._applyZoomDelta(delta);
+        lastPinchDist = dist;
+        e.preventDefault();
+      }
+    };
+    this._touchEndHandler = (e) => {
+      if (e.touches.length < 2) lastPinchDist = null;
+    };
+    container.addEventListener('touchstart', this._touchStartHandler, { passive: false });
+    container.addEventListener('touchmove', this._touchMoveHandler, { passive: false });
+    container.addEventListener('touchend', this._touchEndHandler);
+    container.addEventListener('touchcancel', this._touchEndHandler);
 
     Cesium.ArcGisMapServerImageryProvider.fromUrl(
       'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer', {
@@ -699,9 +732,19 @@ export class CesiumRenderer {
       this._handler.destroy();
       this._handler = null;
     }
-    if (this._wheelHandler && this.viewer) {
-      this.viewer.container.removeEventListener('wheel', this._wheelHandler);
+    if (this.viewer) {
+      const c = this.viewer.container;
+      if (this._wheelHandler) c.removeEventListener('wheel', this._wheelHandler);
+      if (this._touchStartHandler) c.removeEventListener('touchstart', this._touchStartHandler);
+      if (this._touchMoveHandler) c.removeEventListener('touchmove', this._touchMoveHandler);
+      if (this._touchEndHandler) {
+        c.removeEventListener('touchend', this._touchEndHandler);
+        c.removeEventListener('touchcancel', this._touchEndHandler);
+      }
       this._wheelHandler = null;
+      this._touchStartHandler = null;
+      this._touchMoveHandler = null;
+      this._touchEndHandler = null;
     }
     if (this.tooltip && this.tooltip.parentNode) {
       this.tooltip.parentNode.removeChild(this.tooltip);
