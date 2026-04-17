@@ -15,7 +15,7 @@
     "satellite.js": "^5.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^6.0.1",
     "vite": "^8.0.4",
     "vite-plugin-cesium": "^1.2.23"
   }
